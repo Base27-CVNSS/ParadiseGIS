@@ -8,7 +8,7 @@ Mở `webgis/index.html` trực tiếp bằng Chrome/Edge. Leaflet 1.9.4 và d�
 
 Hoặc từ thư mục gốc chạy `python -m http.server 8000`, mở `http://localhost:8000/webgis/`.
 
-**GitHub Pages:** Settings → Pages → Build and deployment → GitHub Actions. Sau khi hợp nhất vào main, workflow `webgis-pages.yml` xuất bản thư mục webgis. Có thể chạy workflow thủ công trên main. Workflow kiểm tra chạy trên nhánh/PR; workflow xuất bản chỉ chạy trên main. Các ví dụ Neo4j/GraphQL ban đầu vẫn nằm nguyên tại chỗ.
+**GitHub Pages:** Settings → Pages → Build and deployment → GitHub Actions. Nếu dùng GitHub Actions làm nguồn Pages, chạy workflow `webgis-pages.yml` thủ công trên main để xuất bản thư mục webgis. Repo hiện dùng xuất bản theo nhánh: tệp index.html tại gốc chuyển người dùng vào webgis/. Workflow kiểm tra chạy trên nhánh/PR. Các ví dụ Neo4j/GraphQL ban đầu vẫn nằm nguyên tại chỗ.
 
 ## Nguồn thật và phạm vi
 
@@ -75,3 +75,19 @@ Rollback: revert commit WebGIS; các ví dụ Neo4j gốc không bị thay đổ
 ## Giấy phép
 
 Mã mới trong `webgis` (trừ vendor và data), `scripts/prepare_icij.py` và tests: MIT, xem `LICENSE`. Leaflet: BSD-2-Clause, xem `vendor/LICENSE`. Dữ liệu ICIJ: ODbL, nội dung CC-BY-SA; phải giữ ghi nguồn và các yêu cầu chia sẻ tương thích, xem `DATA_SOURCES.md`. Không áp MIT lên dữ liệu hoặc mã có sẵn của repo.
+
+## Harmony Visualization / Trace Chain (10/10/2026)
+
+URL repository root now opens `webgis/` automatically. The repository currently publishes from a branch through GitHub Pages. `webgis-pages.yml` is an optional manual workflow: run it only if Settings → Pages is configured for GitHub Actions. It no longer competes with the existing branch deployment on every push.
+
+**Harmony** is the default view: deep navy OSM basemap, multi-source route colors, great-circle display arcs, representative location hubs and labels. The **OSM** tab restores the ordinary basemap; **Đồ thị** uses a logical layout. **⛶** opens the canvas in full screen on browsers supporting the Fullscreen API.
+
+- **Gom tuyến trùng:** group edges sharing representative endpoint coordinates, source and kind. Relationships are grouped without asserting direction; transactions retain their direction. Width follows the count of records, never the value of money. Original edge IDs remain in the popup, table and GeoJSON.
+- The packaged ICIJ data becomes **39 distinct geographic route groups**; **337 same-position relationships** have no geographic length and **380 relationships** have at least one unlocated endpoint. All remain in graph/table/trace. These are counts of relationships, distinct from the 178 unlocated nodes.
+- **Chuỗi mẫu ICIJ** selects an actual connected path in the loaded graph, prioritizing varied locations and limiting to 12 steps. No records or links are synthesized. The example selector explores up to 20 candidate starts, bounded BFS depth 12; shortest-path tracing remains O(V+E).
+- **Trace Chain** presents ordered record cards. Click a card to highlight its representative map hub and incoming connection while keeping the entire chain visible. Click the connector to inspect the underlying relationship/source. Previous/next and play/pause browse records at a fixed 1.8-second interval. This is navigation, not the time taken for money to move. Playback stops on manual selection, reset/import/filter change, or backgrounding the page.
+- In graph mode an active trace uses a readable serpentine sequence with at most 5 cards per row; clicking a card keeps the trace. Records with missing coordinates remain in this chain and the inspector.
+- Color shows the data collection, dashes indicate relationship, arrows indicate imported transactions. Curves and glow illustrate connectivity, not an observed movement or a route measurement. Same-position records are aggregated, never jittered.
+- Great-circle display samples are separate from the existing GeoJSON contract. GeoJSON exports representative endpoint connections with antimeridian splitting; it does not export the decorative glow or infer real-world itinerary.
+
+11 core tests cover the new great-circle degeneracies, wrap continuity, directional aggregation, count accounting and genuine sample-chain adjacency. Syntax and source/asset checks also run. Visual browser QA is still unavailable in the authoring environment; verify labels and touch interactions on your target device.

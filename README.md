@@ -22,4 +22,6 @@ We have the following guide to help you start diving in our Offshore Leaks datab
 
 ## ParadiseGIS WebGIS
 
-New: [OpenStreetMap investigation workspace](webgis/index.html) and [Vietnam-focused ICIJ data, usage and deployment guide](webgis/README.md). Browse 1,090 real ICIJ records / 1,191 direct relationships; inspect original sources, select endpoints, trace relationship paths, or import evidence-backed transactions. Relationship lines do **not** establish fund transfers. The original Neo4j examples below are retained.
+New: [Harmony Trace Chain / OpenStreetMap investigation workspace](webgis/index.html) and [Vietnam-focused ICIJ data, usage and deployment guide](webgis/README.md). Browse 1,090 real ICIJ records / 1,191 direct relationships; inspect original sources, select endpoints, trace relationship paths, or import evidence-backed transactions. Relationship lines do **not** establish fund transfers. The original Neo4j examples below are retained.
+
+Harmony view adds dark OSM, curved source-colored route groups and an interactive ordered Trace Chain. The root GitHub Pages URL now opens the application. Select **Chuỗi mẫu ICIJ** for a genuine record chain, or choose your own endpoints.

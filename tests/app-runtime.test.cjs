@@ -1,0 +1,22 @@
+// Browser-free control-flow checks. This DOM double does not verify rendering or Leaflet.
+const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+const root=path.join(__dirname,'../webgis');
+function workspace(){
+ const elements=new Map();
+ class Element{
+  constructor(){this.attrs={viewBox:'0 0 1000 600'};this.style={};this.value='';this.textContent='';this.children=[];this.options=[];this.checked=false;this.disabled=false;this.hidden=false;const classes=new Set();this.classList={contains:k=>classes.has(k),toggle:(k,on)=>on===undefined?(classes.has(k)?classes.delete(k):classes.add(k)):(on?classes.add(k):classes.delete(k)),add:k=>classes.add(k)};}
+  set innerHTML(text){this.html=text;for(const m of text.matchAll(/id="([^"]+)"/g))if(!elements.has(m[1]))elements.set(m[1],new Element());this.options=[...text.matchAll(/<option(?: value="([^"]*)")?>([^<]*)<\/option>/g)].map(m=>({value:m[1]??m[2]}));}
+  get innerHTML(){return this.html||'';}append(child){this.children.push(child);}replaceChildren(){this.children=[];}insertAdjacentHTML(_,text){this.innerHTML=this.innerHTML+text;}
+  setAttribute(k,v){this.attrs[k]=v;}getAttribute(k){return this.attrs[k];}addEventListener(){}scrollIntoView(){}querySelector(){return new Element();}getBoundingClientRect(){return {width:1000,height:600};}setPointerCapture(){}
+ }
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');for(const m of html.matchAll(/id="([^"]+)"/g))elements.set(m[1],new Element());
+ elements.get('aggregate').checked=true;elements.get('showLabels').checked=true;
+ const document={body:new Element(),getElementById:id=>elements.get(id),createElement:()=>new Element(),createElementNS:()=>new Element(),addEventListener(){}};document.body.classList.add('harmony');
+ let tick=null;const context={document,console,URL,Blob,setTimeout:()=>1,clearTimeout(){},setInterval:fn=>{tick=fn;return 1;},clearInterval:()=>{tick=null;}};context.window=context;context.matchMedia=()=>({matches:true});context.ICIJ_DATA=JSON.parse(fs.readFileSync(path.join(root,'data/icij.json'),'utf8'));
+ vm.createContext(context);for(const name of ['core.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),context,{filename:name});
+ return {elements,context,inspect:expr=>vm.runInContext(expr,context),tick:()=>{if(tick)tick();},isPlaying:()=>Boolean(tick)};
+}
+test('workspace initializes and sample chain preserves all steps while inspecting',()=>{const w=workspace();assert.notEqual(w.elements.get('canvasStatus').textContent,'Lỗi đọc dữ liệu');assert.ok(w.elements.get('resultCount').textContent.includes('1.090'));w.elements.get('exampleTrace').onclick();const count=w.inspect('path.nodes.length');assert.ok(count>=3);assert.ok(w.elements.get('chainTitle').textContent.includes(count+' hồ sơ'));w.elements.get('nextStep').onclick();assert.equal(w.inspect('activeStep'),1);assert.equal(w.inspect('path.nodes.length'),count);w.elements.get('graphView').onclick();assert.equal(w.elements.get('graph').hidden,false);assert.ok(w.elements.get('graphSvg').children.length>0);});
+test('playback advances then manual navigation and reset stop playback',()=>{const w=workspace();w.elements.get('exampleTrace').onclick();w.elements.get('playChain').onclick();assert.equal(w.isPlaying(),true);w.tick();assert.equal(w.inspect('activeStep'),1);assert.equal(w.isPlaying(),true);w.elements.get('nextStep').onclick();assert.equal(w.isPlaying(),false);w.elements.get('playChain').onclick();w.elements.get('chainClear').onclick();assert.equal(w.isPlaying(),false);assert.equal(w.inspect('path'),null);assert.equal(w.elements.get('playChain').disabled,true);});
+test('no-path result clears an earlier trace instead of showing stale steps',()=>{const w=workspace();w.elements.get('exampleTrace').onclick();w.elements.get('transactionOnly').checked=true;w.elements.get('trace').onclick();assert.equal(w.inspect('path'),null);assert.match(w.elements.get('routeStatus').textContent,/Không tìm thấy tuyến/);assert.equal(w.elements.get('playChain').disabled,true);});
+test('invalid imports retain current valid records and report failure',async()=>{const w=workspace();const before=w.inspect('data.nodes.length');w.elements.get('file').files=[{size:20,text:async()=>JSON.stringify({nodes:[{id:'x',name:'bad',lat:999,lon:0}],edges:[]})}];await w.elements.get('file').onchange();assert.equal(w.inspect('data.nodes.length'),before);assert.match(w.elements.get('toast').textContent,/Không mở được tệp/);});

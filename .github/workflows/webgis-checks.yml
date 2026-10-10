@@ -18,5 +18,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: node --check webgis/app.js
-      - run: node --test tests/core.test.cjs
+      - run: node --test tests/*.test.cjs
       - run: python -W error::ResourceWarning -m unittest discover -s tests -p 'test_*.py'

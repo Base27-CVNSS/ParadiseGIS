@@ -29,6 +29,59 @@ function routeGeometry(a,b){
  const boundary=end>180?180:-180, t=(boundary-a.lon)/(end-a.lon), lat=a.lat+t*(b.lat-a.lat);
  return {type:'MultiLineString',coordinates:[[[a.lon,a.lat],[boundary,lat]],[[-boundary,lat],[b.lon,b.lat]]]};
 }
-const api={validate,validPoint,shortestPath,routePoints,routeGeometry,safeURL};
+// Great-circle display sampling. It illustrates a connection, never an observed itinerary.
+function routeCurve(a,b,segments=48){
+ if(!validPoint(a)||!validPoint(b))return [];
+ if(!Number.isInteger(segments)||segments<2||segments>256)throw Error('segments must be 2..256');
+ const rad=Math.PI/180;
+ const vector=n=>[Math.cos(n.lat*rad)*Math.cos(n.lon*rad),Math.cos(n.lat*rad)*Math.sin(n.lon*rad),Math.sin(n.lat*rad)];
+ const u=vector(a),v=vector(b),dot=Math.max(-1,Math.min(1,u.reduce((sum,x,i)=>sum+x*v[i],0))),omega=Math.acos(dot),sin=Math.sin(omega),straight=routePoints(a,b);
+ const points=[];let previous=a.lon;
+ for(let i=0;i<=segments;i++){
+  const t=i/segments;let lat,lon;
+  if(Math.abs(sin)<1e-7){lat=a.lat+(b.lat-a.lat)*t;lon=a.lon+(straight[1][1]-a.lon)*t;}
+  else{const x=u.map((value,j)=>(Math.sin((1-t)*omega)*value+Math.sin(t*omega)*v[j])/sin);lat=Math.atan2(x[2],Math.hypot(x[0],x[1]))/rad;lon=Math.atan2(x[1],x[0])/rad;}
+  while(lon-previous>180)lon-=360;while(lon-previous< -180)lon+=360;
+  points.push([Math.max(-85.05112878,Math.min(85.05112878,lat)),lon]);previous=lon;
+ }
+ points[0]=[a.lat,a.lon];points[points.length-1][0]=b.lat;
+ return points;
+}
+function aggregateRoutes(nodes,edges){
+ const lookup=new Map(nodes.map(n=>[n.id,n])),groups=new Map();let unmapped=0,colocated=0;
+ for(const e of edges){
+  const a=lookup.get(e.from),b=lookup.get(e.to);if(!a||!b||!validPoint(a)||!validPoint(b)){unmapped++;continue;}
+  let start=`${a.lat},${a.lon}`,end=`${b.lat},${b.lon}`;
+  if(start===end){colocated++;continue;}
+  if(e.kind==='relationship'&&start>end)[start,end]=[end,start];
+  const key=JSON.stringify([start,end,e.kind,e.source||'']);
+  if(!groups.has(key))groups.set(key,{id:key,from:e.from,to:e.to,kind:e.kind,source:e.source||'',edges:[]});
+  groups.get(key).edges.push(e.id);
+ }
+ return {routes:[...groups.values()],unmapped,colocated};
+}
+function examplePath(nodes,edges){
+ // A bounded genuine component walk, not a fabricated example or shortest-money-flow claim.
+ const lookup=new Map(nodes.map(n=>[n.id,n])),adj=new Map(nodes.map(n=>[n.id,[]]));
+ for(const e of edges){adj.get(e.from)?.push([e.to,e.id]);if(e.kind==='relationship')adj.get(e.to)?.push([e.from,e.id]);}
+ const candidates=nodes.filter(n=>validPoint(n)&&String(n.country_codes||'').split(';').includes('VNM')).slice(0,20);
+ if(!candidates.length)candidates.push(...nodes.filter(validPoint).slice(0,20));
+ let best=null,bestScore=-1;
+ for(const start of candidates){
+  const previous=new Map([[start.id,null]]),depth=new Map([[start.id,0]]),queue=[start.id];
+  for(let i=0;i<queue.length;i++){const cur=queue[i];if(depth.get(cur)>=12)continue;for(const [next,e]of adj.get(cur)||[])if(!previous.has(next)){previous.set(next,[cur,e]);depth.set(next,depth.get(cur)+1);queue.push(next);}}
+  for(const end of queue){
+   if(end===start.id||!validPoint(lookup.get(end)))continue;
+   const p={nodes:[end],edges:[]};let cur=end;
+   while(previous.get(cur)){const[before,e]=previous.get(cur);p.nodes.unshift(before);p.edges.unshift(e);cur=before;}
+   if(p.edges.length>12)continue;
+   const places=new Set(p.nodes.map(id=>{const n=lookup.get(id);return validPoint(n)?`${n.lat},${n.lon}`:null;}).filter(Boolean));
+   const score=places.size*100+Math.min(p.edges.length,8);
+   if(score>bestScore){bestScore=score;best=p;}
+  }
+ }
+ return best;
+}
+const api={validate,validPoint,shortestPath,routePoints,routeGeometry,routeCurve,aggregateRoutes,examplePath,safeURL};
 if(typeof module!=='undefined')module.exports=api;else root.ParadiseCore=api;
 })(typeof window!=='undefined'?window:globalThis);
