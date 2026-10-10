@@ -19,3 +19,7 @@ It also includes Neo4j guides that can be loaded in Neo4j Desktop.
 We have the following guide to help you start diving in our Offshore Leaks database:
 
 - [Paradise Papers](guides/paradise-papers/)
+
+## ParadiseGIS WebGIS
+
+New: [OpenStreetMap investigation workspace](webgis/index.html) and [Vietnam-focused ICIJ data, usage and deployment guide](webgis/README.md). Browse 1,090 real ICIJ records / 1,191 direct relationships; inspect original sources, select endpoints, trace relationship paths, or import evidence-backed transactions. Relationship lines do **not** establish fund transfers. The original Neo4j examples below are retained.
