@@ -12,7 +12,7 @@ function workspace(){
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');for(const m of html.matchAll(/id="([^"]+)"/g))elements.set(m[1],new Element());
  elements.get('aggregate').checked=true;elements.get('showLabels').checked=true;
  const document={body:new Element(),getElementById:id=>elements.get(id),createElement:()=>new Element(),createElementNS:()=>new Element(),addEventListener(){}};document.body.classList.add('harmony');
- let tick=null;const context={document,console,URL,Blob,setTimeout:()=>1,clearTimeout(){},setInterval:fn=>{tick=fn;return 1;},clearInterval:()=>{tick=null;}};context.window=context;context.matchMedia=()=>({matches:true});context.ICIJ_DATA=JSON.parse(fs.readFileSync(path.join(root,'data/icij.json'),'utf8'));
+ let tick=null;const context={document,console,URL,Blob,setTimeout:()=>1,clearTimeout(){},setInterval:fn=>{tick=fn;return 1;},clearInterval:()=>{tick=null;}};context.window=context;context.addEventListener=()=>{};context.matchMedia=()=>({matches:true});context.ICIJ_DATA=JSON.parse(fs.readFileSync(path.join(root,'data/icij.json'),'utf8'));
  vm.createContext(context);for(const name of ['core.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),context,{filename:name});
  return {elements,context,inspect:expr=>vm.runInContext(expr,context),tick:()=>{if(tick)tick();},isPlaying:()=>Boolean(tick)};
 }

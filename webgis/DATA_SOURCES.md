@@ -16,3 +16,12 @@ Checked: 2026-10-10.
 One-hop selection includes all nodes coded VNM and all edges touching those seeds. Retain sourceID, relation type, dates, valid_until, jurisdiction/country labels and canonical node URL. Names alone do not establish identity; inclusion in ICIJ does not establish wrongdoing.
 
 Map relations express graph connections, not money movement, amounts, a bank account or physical itinerary. User-imported transactions require their own provenance; this tool cannot authenticate uploaded evidence. Keep original records and independently verify matching identities before drawing conclusions.
+
+## Local mapbase (2026-10-10)
+
+`data/world-land.js` bundles the Natural Earth 1:110 million land dataset from:
+https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson
+
+Retrieved 2026-10-10; 127 land features; raw source SHA256 `9e0729ee253ca7d7a5c4ae9395fb1902264c5377c52e224d13dd85010e2835d9`. Natural Earth data is public domain: https://www.naturalearthdata.com/about/terms-of-use/ . Coordinates are WGS84 / EPSG:4326. This generalized land/coastline layer shows geographic context, not local roads, national borders or surveyed positions. Continent captions use representative label anchors. Copies at ±360° are display-only world wrapping.
+
+The local mapbase loads before any optional online OSM tiles. OSM may be unavailable or return a blocked tile image; such a 200 response cannot reliably be detected via tileerror. Choose **Nền thế giới có sẵn** if the online source fails. No tile bypass, proxying, bulk download or automatic retry is implemented.

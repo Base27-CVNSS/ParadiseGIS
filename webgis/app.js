@@ -4,7 +4,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const colors={entities:'#e64444',officers:'#3869cc',intermediaries:'#a16b24',addresses:'#798799',others:'#798799'};
 const types={entities:'Pháp nhân',officers:'Cá nhân / tổ chức',intermediaries:'Trung gian',addresses:'Địa chỉ',others:'Khác'};
 let data,byId,selected=null,selectedEdge=null,path=null,visibleNodes=[],visibleEdges=[],map,layer,view='harmony',graphScale=1;
-let toastTimer,playTimer=null,activeStep=0;
+let toastTimer,playTimer=null,activeStep=0,basemapManager=null;
 const sourceColors={'Panama Papers':'#ffd166','Paradise Papers - Appleby':'#56d8ed','Paradise Papers':'#56d8ed','Pandora Papers':'#ff78bd','Offshore Leaks':'#94e37e','Bahamas Leaks':'#c6a3ff'};
 const sourceColor=source=>sourceColors[source]||(/Paradise/.test(source||'')?'#56d8ed':/Pandora/.test(source||'')?'#ff78bd':'#98b6ef');
 
@@ -12,8 +12,7 @@ function toast(s){$('toast').textContent=s;$('toast').style.display='block';clea
 function initMap(){
  if(!window.L){$('map').textContent='Không đọc được thư viện bản đồ. Chuyển sang đồ thị để xem hồ sơ.';return;}
  map=L.map('map',{worldCopyJump:true,minZoom:1,maxZoom:18}).setView([20,75],3);
- const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
- let tileWarning=false;tiles.on('tileerror',()=>{if(!tileWarning){tileWarning=true;toast('Không tải được nền OSM. Điểm và tuyến vẫn có thể xem; kiểm tra kết nối.');}});
+ basemapManager=window.ParadiseBasemap.createBasemap(map,window.WORLD_LAND,status=>{$('basemapStatus').textContent=status;});
  layer=L.featureGroup().addTo(map);map.on('zoomend',()=>{if(data)drawMap();});
 }
 function loadData(next){
@@ -185,6 +184,7 @@ function fit(){if(map&&visibleNodes.some(C.validPoint)){const points=visibleNode
 function switchView(next){
  view=next;const graph=next==='graph';$('map').hidden=graph;$('graph').hidden=!graph;
  if(next!=='graph')document.body.classList.toggle('harmony',next==='harmony');
+ if(basemapManager&&next!=='graph'){const name=next==='map'?'osm':'world';$('basemapSelect').value=name;basemapManager.set(name);}
  $('harmonyView').classList.toggle('active',next==='harmony');$('mapView').classList.toggle('active',next==='map');$('graphView').classList.toggle('active',graph);
  if(!graph&&map){map.invalidateSize();drawMap();}if(graph)drawGraph();
 }
@@ -210,6 +210,8 @@ $('playChain').onclick=()=>{if(!path)return;if(playTimer){stopPlayback();return;
 $('canvasPrevious').onclick=()=>$('previousStep').onclick();$('canvasNext').onclick=()=>$('nextStep').onclick();$('canvasPlay').onclick=()=>$('playChain').onclick();
 $('chainClear').onclick=clearRoute;$('clearRoute').onclick=clearRoute;$('export').onclick=exportGeoJSON;$('load').onclick=()=>$('file').click();
 for(const id of ['aggregate','showLabels'])$(id).onchange=drawMap;
+$('basemapSelect').onchange=()=>{if(basemapManager)basemapManager.set($('basemapSelect').value);};
+window.addEventListener('basemap-error',()=>toast('OSM chưa tải được. Chọn Nền thế giới có sẵn để tiếp tục xem bản đồ.'));
 $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if($('mapCanvas').requestFullscreen)await $('mapCanvas').requestFullscreen();else toast('Trình duyệt này không hỗ trợ toàn màn hình.');}catch{toast('Không mở được chế độ toàn màn hình.');}};
 document.addEventListener('fullscreenchange',()=>{if(map)setTimeout(()=>map.invalidateSize(),60);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlayback();});

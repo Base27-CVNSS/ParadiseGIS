@@ -91,3 +91,7 @@ URL repository root now opens `webgis/` automatically. The repository currently 
 - Great-circle display samples are separate from the existing GeoJSON contract. GeoJSON exports representative endpoint connections with antimeridian splitting; it does not export the decorative glow or infer real-world itinerary.
 
 11 core tests cover the new great-circle degeneracies, wrap continuity, directional aggregation, count accounting and genuine sample-chain adjacency. Syntax and source/asset checks also run. Visual browser QA is still unavailable in the authoring environment; verify labels and touch interactions on your target device.
+
+## Mapbase visibility fix
+
+Harmony defaults to **Nền thế giới có sẵn**: bundled Natural Earth land/coastlines and continent labels are rendered on a navy background without an online request. This gives a visible geographic background even when OSM is unavailable. Use the **Mapbase** selector to switch to **OpenStreetMap trực tuyến** for streets and place labels. The OSM tab selects the online basemap; Harmony selects the local world map. OSM tiles use original colors, without the earlier invert/brightness filter. A basemap status line identifies the source. The local layer is a generalized 1:110M world background; it is not a detailed offline street map.
