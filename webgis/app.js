@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id), C=window.ParadiseCore;
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const colors={entities:'#e64444',officers:'#3869cc',intermediaries:'#a16b24',addresses:'#798799',others:'#798799'};
 const types={entities:'Pháp nhân',officers:'Cá nhân / tổ chức',intermediaries:'Trung gian',addresses:'Địa chỉ',others:'Khác'};
-let data,byId,selected=null,selectedEdge=null,path=null,visibleNodes=[],visibleEdges=[],map,layer,view='harmony',graphScale=1;
+let data,byId,selected=null,selectedEdge=null,path=null,visibleNodes=[],visibleEdges=[],map,layer,view='vietflex',graphScale=1;
 let toastTimer,playTimer=null,activeStep=0,vietflexApp=null;
 const sourceColors={'Panama Papers':'#ffd166','Paradise Papers - Appleby':'#56d8ed','Paradise Papers':'#56d8ed','Pandora Papers':'#ff78bd','Offshore Leaks':'#94e37e','Bahamas Leaks':'#c6a3ff'};
 const sourceColor=source=>sourceColors[source]||(/Paradise/.test(source||'')?'#56d8ed':/Pandora/.test(source||'')?'#ff78bd':'#98b6ef');
@@ -15,8 +15,9 @@ function initMap(){
   error.textContent='Không tải được Leaflet hoặc Vietflexmap 1.0.2. Kiểm tra CDN.';error.hidden=false;throw Error(error.textContent);
  }
  vietflexApp=window.VNMap.create('map');window.vnMapApp=vietflexApp;
- const candidates=[vietflexApp,vietflexApp?.map,vietflexApp?.leafletMap,vietflexApp?._map,vietflexApp?.getMap?.()];
+ const candidates=[vietflexApp,vietflexApp?.map,vietflexApp?.leafletMap,vietflexApp?._map,typeof vietflexApp?.getMap==='function'?vietflexApp.getMap():null];
  map=candidates.find(m=>m&&typeof m.addLayer==='function'&&typeof m.fitBounds==='function'&&typeof m.on==='function');
+ // VNMap owns the sole map instance. Layers below are investigation overlays only.
  if(!map){error.textContent='Vietflexmap đã nạp nhưng chưa truy cập được Leaflet map để hiển thị lớp điều tra.';error.hidden=false;throw Error(error.textContent);}
  layer=L.featureGroup().addTo(map);
  map.on('zoomend',()=>{if(data)drawMap();});
