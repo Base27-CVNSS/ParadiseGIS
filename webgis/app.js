@@ -18,6 +18,8 @@ function initMap(){
  const candidates=[vietflexApp,vietflexApp?.map,vietflexApp?.leafletMap,vietflexApp?._map,typeof vietflexApp?.getMap==='function'?vietflexApp.getMap():null];
  map=candidates.find(m=>m&&typeof m.addLayer==='function'&&typeof m.fitBounds==='function'&&typeof m.on==='function');
  // VNMap owns the sole map instance. Layers below are investigation overlays only.
+ // Remove Leaflet's default branding link without suppressing source-data attribution.
+ if(map?.attributionControl&&typeof map.attributionControl.setPrefix==='function')map.attributionControl.setPrefix(false);
  if(!map){error.textContent='Vietflexmap đã nạp nhưng chưa truy cập được Leaflet map để hiển thị lớp điều tra.';error.hidden=false;throw Error(error.textContent);}
  layer=L.featureGroup().addTo(map);
  map.on('zoomend',()=>{if(data)drawMap();});
