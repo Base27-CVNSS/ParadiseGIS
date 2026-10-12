@@ -9,6 +9,37 @@ const sourceColors={'Panama Papers':'#ffd166','Paradise Papers - Appleby':'#56d8
 const sourceColor=source=>sourceColors[source]||(/Paradise/.test(source||'')?'#56d8ed':/Pandora/.test(source||'')?'#ff78bd':'#98b6ef');
 
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',5500);}
+function installVNBranding(mapInstance){
+ const branding='<span class="vnmap-credit" aria-label="Bản đồ Việt Nam">🇻🇳 VN</span>';
+ const setBrand=()=>{
+  if(mapInstance.attributionControl&&typeof mapInstance.attributionControl.setPrefix==='function'){
+   mapInstance.attributionControl.setPrefix(branding);
+  }
+  const container=$('map');
+  if(!container)return;
+  // A library may re-render its own attribution; replace only the engine branding.
+  container.querySelectorAll('.leaflet-control-attribution a[href*="leafletjs.com"], .leaflet-control-attribution a[title*="JavaScript library for interactive maps"]').forEach(link=>{
+   const target=link.parentElement;
+   if(!target)return;
+   const badge=document.createElement('span');
+   badge.className='vnmap-credit';badge.textContent='🇻🇳 VN';
+   link.replaceWith(badge);
+  });
+ };
+ setBrand();
+ const container=$('map');
+ if(container&&typeof MutationObserver==='function'){
+  let updating=false;
+  const observer=new MutationObserver(()=>{
+   if(updating)return;updating=true;
+   try{
+    const legacy=container.querySelector('.leaflet-control-attribution a[href*="leafletjs.com"]');
+    if(legacy)setBrand();
+   }finally{updating=false;}
+  });
+  observer.observe(container,{childList:true,subtree:true});
+ }
+}
 function initMap(){
  const error=$('vietflexError');
  if(!window.L||!window.VNMap||typeof window.VNMap.create!=='function'){
@@ -18,8 +49,8 @@ function initMap(){
  const candidates=[vietflexApp,vietflexApp?.map,vietflexApp?.leafletMap,vietflexApp?._map,typeof vietflexApp?.getMap==='function'?vietflexApp.getMap():null];
  map=candidates.find(m=>m&&typeof m.addLayer==='function'&&typeof m.fitBounds==='function'&&typeof m.on==='function');
  // VNMap owns the sole map instance. Layers below are investigation overlays only.
- // Remove Leaflet's default branding link without suppressing source-data attribution.
- if(map?.attributionControl&&typeof map.attributionControl.setPrefix==='function')map.attributionControl.setPrefix(false);
+ // VN branding replaces the map engine prefix; preserve basemap data attribution.
+ installVNBranding(map);
  if(!map){error.textContent='Vietflexmap đã nạp nhưng chưa truy cập được Leaflet map để hiển thị lớp điều tra.';error.hidden=false;throw Error(error.textContent);}
  layer=L.featureGroup().addTo(map);
  map.on('zoomend',()=>{if(data)drawMap();});
