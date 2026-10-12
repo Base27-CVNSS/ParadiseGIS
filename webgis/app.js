@@ -122,7 +122,7 @@ function activatePath(next){
  $('start').value=path.nodes[0];$('end').value=path.nodes.at(-1);
  const unknown=path.nodes.filter(id=>!C.validPoint(byId.get(id))).length;
  $('routeStatus').textContent=`${path.edges.length} bước · ${unknown} hồ sơ chưa định vị. ${$('transactionOnly').checked?'Chuỗi giao dịch có hướng từ dữ liệu nhập.':'Chuỗi quan hệ hồ sơ; không phải bằng chứng chuyển tiền.'}`;
- switchView('harmony');inspectStep(0);fit();
+ switchView('vietflex');inspectStep(0);fit();
 }
 function drawGraph(){
  if(path){drawChainGraph();return;}
@@ -202,7 +202,7 @@ function openVietflex(){
 function switchView(next){
  view=next;const graph=next==='graph',vf=next==='vietflex';
  $('map').hidden=graph||vf;$('vietflexMap').hidden=!vf;$('graph').hidden=!graph;
- if(!graph)document.body.classList.toggle('harmony',next==='harmony');
+ if(!graph)document.body.classList.toggle('harmony',next==='harmony');document.body.classList.toggle('vietflex-mode',vf);
  if(basemapManager&&!graph&&!vf){const name=next==='map'?'osm':'world';$('basemapSelect').value=name;basemapManager.set(name);}
  $('harmonyView').classList.toggle('active',next==='harmony');$('mapView').classList.toggle('active',next==='map');$('graphView').classList.toggle('active',graph);$('vietflexView').classList.toggle('active',vf);
  if(vf)openVietflex();else if(!graph&&map){map.invalidateSize();drawMap();}
@@ -234,7 +234,7 @@ for(const id of ['aggregate','showLabels'])$(id).onchange=drawMap;
 $('basemapSelect').onchange=()=>{if(basemapManager)basemapManager.set($('basemapSelect').value);};
 window.addEventListener('basemap-error',()=>toast('OSM chưa tải được. Chọn Nền thế giới có sẵn để tiếp tục xem bản đồ.'));
 $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if($('mapCanvas').requestFullscreen)await $('mapCanvas').requestFullscreen();else toast('Trình duyệt này không hỗ trợ toàn màn hình.');}catch{toast('Không mở được chế độ toàn màn hình.');}};
-document.addEventListener('fullscreenchange',()=>{if(map)setTimeout(()=>map.invalidateSize(),60);});
+document.addEventListener('fullscreenchange',()=>{if(map)setTimeout(()=>map.invalidateSize(),60);if(view==='vietflex')setTimeout(()=>{const m=vietflexApp?.map||vietflexApp;if(m&&typeof m.invalidateSize==='function')m.invalidateSize();},70);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlayback();});
 $('file').onchange=async()=>{const f=$('file').files[0];if(!f)return;try{if(f.size>12*1024*1024)throw Error('Tệp vượt 12 MB.');const next=JSON.parse(await f.text());loadData(next);toast('Đã mở hồ sơ. Giao dịch nhập chưa được xác minh độc lập.');}catch(e){toast('Không mở được tệp: '+e.message);}finally{$('file').value='';}};
 $('graphPlus').onclick=()=>{graphScale=Math.min(3,graphScale+.2);drawGraph();};$('graphMinus').onclick=()=>{graphScale=Math.max(.4,graphScale-.2);drawGraph();};
