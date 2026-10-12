@@ -10,3 +10,6 @@
 .vietflex-mode .leaflet-tile-pane{filter:none!important}
 .vietflex-mode .canvas{background:#e8eef4}
 .vietflex-mode .view-switch #vietflexView.active{background:#172033;color:#fff;border-color:#172033}
+
+/* Restrict visual identity to the map engine credit; leave data-source credits intact. */
+.vnmap-credit{font-weight:700;white-space:nowrap;color:#d12222}
