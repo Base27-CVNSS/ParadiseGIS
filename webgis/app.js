@@ -204,7 +204,7 @@ function switchView(next){
  $('map').hidden=graph||vf;$('vietflexMap').hidden=!vf;$('graph').hidden=!graph;
  if(!graph)document.body.classList.toggle('harmony',next==='harmony');document.body.classList.toggle('vietflex-mode',vf);
  if(basemapManager&&!graph&&!vf){const name=next==='map'?'osm':'world';$('basemapSelect').value=name;basemapManager.set(name);}
- $('harmonyView').classList.toggle('active',next==='harmony');$('mapView').classList.toggle('active',next==='map');$('graphView').classList.toggle('active',graph);$('vietflexView').classList.toggle('active',vf);
+ $('graphView').classList.toggle('active',graph);$('vietflexView').classList.toggle('active',vf);
  if(vf)openVietflex();else if(!graph&&map){map.invalidateSize();drawMap();}
  if(graph)drawGraph();
 }
@@ -222,8 +222,8 @@ document.addEventListener('click',e=>{
  else if(n)showNode(n.dataset.node);else if(edge)showEdge(edge.dataset.edge);
 });
 for(const id of ['search','type','source','edgeKind'])$(id).addEventListener(id==='search'?'input':'change',()=>{stopPlayback();selected=null;path=null;selectedEdge=null;$('icijSearch').href='https://offshoreleaks.icij.org/search?q='+encodeURIComponent($('search').value);render();});
-$('reset').onclick=()=>loadData(window.ICIJ_DATA);$('harmonyView').onclick=()=>switchView('harmony');$('vietflexView').onclick=()=>switchView('vietflex');
-$('mapView').onclick=()=>switchView('map');$('graphView').onclick=()=>switchView('graph');$('fit').onclick=fit;
+$('reset').onclick=()=>loadData(window.ICIJ_DATA);$('vietflexView').onclick=()=>switchView('vietflex');
+$('graphView').onclick=()=>switchView('graph');$('fit').onclick=fit;
 $('trace').onclick=()=>{const a=$('start').value,b=$('end').value;if(!a||!b){toast('Hãy chọn cả điểm đầu và điểm cuối.');return;}activatePath(C.shortestPath(data.nodes,data.edges,a,b,$('transactionOnly').checked));};
 $('exampleTrace').onclick=()=>{$('transactionOnly').checked=false;activatePath(C.examplePath(data.nodes,data.edges));$('chainPanel').scrollIntoView({block:'nearest'});};
 $('previousStep').onclick=()=>{stopPlayback();inspectStep(activeStep-1);};$('nextStep').onclick=()=>{stopPlayback();inspectStep(activeStep+1);};
