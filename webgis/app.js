@@ -9,35 +9,32 @@ const sourceColors={'Panama Papers':'#ffd166','Paradise Papers - Appleby':'#56d8
 const sourceColor=source=>sourceColors[source]||(/Paradise/.test(source||'')?'#56d8ed':/Pandora/.test(source||'')?'#ff78bd':'#98b6ef');
 
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',5500);}
+const VN_CREDIT='<span class="vnmap-credit" aria-label="Vietflexmap Việt Nam">🇻🇳 VN</span>';
 function installVNBranding(mapInstance){
- const branding='<span class="vnmap-credit" aria-label="Bản đồ Việt Nam">🇻🇳 VN</span>';
- const setBrand=()=>{
-  if(mapInstance.attributionControl&&typeof mapInstance.attributionControl.setPrefix==='function'){
-   mapInstance.attributionControl.setPrefix(branding);
+ // The map engine attribution prefix, not source-data credits.
+ const ctrl=mapInstance?.attributionControl;
+ if(ctrl&&typeof ctrl.setPrefix==='function')ctrl.setPrefix(VN_CREDIT);
+ const root=$('map');
+ if(!root)return;
+ const update=()=>{
+  const controls=root.querySelectorAll('.leaflet-control-attribution');
+  for(const el of controls){
+   for(const a of el.querySelectorAll('a')){
+    const href=a.getAttribute('href')||'';
+    const title=a.getAttribute('title')||'';
+    if(/(?:^|\\.)leafletjs\\.com/i.test((()=>{try{return new URL(href,location.href).hostname}catch{return ''}})()) || /JavaScript library for interactive maps/i.test(title)){
+     const credit=document.createElement('span');
+     credit.className='vnmap-credit';credit.textContent='🇻🇳 VN';credit.setAttribute('aria-label','Vietflexmap Việt Nam');
+     a.replaceWith(credit);
+    }
+   }
   }
-  const container=$('map');
-  if(!container)return;
-  // A library may re-render its own attribution; replace only the engine branding.
-  container.querySelectorAll('.leaflet-control-attribution a[href*="leafletjs.com"], .leaflet-control-attribution a[title*="JavaScript library for interactive maps"]').forEach(link=>{
-   const target=link.parentElement;
-   if(!target)return;
-   const badge=document.createElement('span');
-   badge.className='vnmap-credit';badge.textContent='🇻🇳 VN';
-   link.replaceWith(badge);
-  });
  };
- setBrand();
- const container=$('map');
- if(container&&typeof MutationObserver==='function'){
-  let updating=false;
-  const observer=new MutationObserver(()=>{
-   if(updating)return;updating=true;
-   try{
-    const legacy=container.querySelector('.leaflet-control-attribution a[href*="leafletjs.com"]');
-    if(legacy)setBrand();
-   }finally{updating=false;}
-  });
-  observer.observe(container,{childList:true,subtree:true});
+ update();
+ if(typeof MutationObserver==='function'){
+  let busy=false;
+  new MutationObserver(()=>{if(busy)return;busy=true;try{update()}finally{busy=false}})
+   .observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['href','title']});
  }
 }
 function initMap(){
@@ -45,13 +42,15 @@ function initMap(){
  if(!window.L||!window.VNMap||typeof window.VNMap.create!=='function'){
   error.textContent='Không tải được Leaflet hoặc Vietflexmap 1.0.2. Kiểm tra CDN.';error.hidden=false;throw Error(error.textContent);
  }
+ // Configure the prefix BEFORE VNMap creates any Leaflet attribution control.
+ if(window.L.Control?.Attribution?.prototype?.options)window.L.Control.Attribution.prototype.options.prefix=VN_CREDIT;
  vietflexApp=window.VNMap.create('map');window.vnMapApp=vietflexApp;
  const candidates=[vietflexApp,vietflexApp?.map,vietflexApp?.leafletMap,vietflexApp?._map,typeof vietflexApp?.getMap==='function'?vietflexApp.getMap():null];
  map=candidates.find(m=>m&&typeof m.addLayer==='function'&&typeof m.fitBounds==='function'&&typeof m.on==='function');
  // VNMap owns the sole map instance. Layers below are investigation overlays only.
  // VN branding replaces the map engine prefix; preserve basemap data attribution.
- installVNBranding(map);
  if(!map){error.textContent='Vietflexmap đã nạp nhưng chưa truy cập được Leaflet map để hiển thị lớp điều tra.';error.hidden=false;throw Error(error.textContent);}
+ installVNBranding(map);
  layer=L.featureGroup().addTo(map);
  map.on('zoomend',()=>{if(data)drawMap();});
  $('basemapStatus').textContent='Vietflexmap 1.0.2 · bản đồ duy nhất';
