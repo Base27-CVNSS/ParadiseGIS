@@ -4,7 +4,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const colors={entities:'#e64444',officers:'#3869cc',intermediaries:'#a16b24',addresses:'#798799',others:'#798799'};
 const types={entities:'Pháp nhân',officers:'Cá nhân / tổ chức',intermediaries:'Trung gian',addresses:'Địa chỉ',others:'Khác'};
 let data,byId,selected=null,selectedEdge=null,path=null,visibleNodes=[],visibleEdges=[],map,layer,view='harmony',graphScale=1;
-let toastTimer,playTimer=null,activeStep=0,basemapManager=null;
+let toastTimer,playTimer=null,activeStep=0,basemapManager=null,vietflexApp=null;
 const sourceColors={'Panama Papers':'#ffd166','Paradise Papers - Appleby':'#56d8ed','Paradise Papers':'#56d8ed','Pandora Papers':'#ff78bd','Offshore Leaks':'#94e37e','Bahamas Leaks':'#c6a3ff'};
 const sourceColor=source=>sourceColors[source]||(/Paradise/.test(source||'')?'#56d8ed':/Pandora/.test(source||'')?'#ff78bd':'#98b6ef');
 
@@ -181,12 +181,32 @@ function showEdge(id){
  render();
 }
 function fit(){if(map&&visibleNodes.some(C.validPoint)){const points=visibleNodes.filter(C.validPoint).map(n=>[n.lat,n.lon]);map.fitBounds(points,{padding:[45,45],maxZoom:points.length===1?6:4});}graphScale=1;$('graphSvg').setAttribute('viewBox','0 0 1000 600');drawGraph();}
+function openVietflex(){
+ const target=$('vietflexMap'),error=$('vietflexError');
+ error.hidden=true;target.hidden=false;
+ if(!window.L||!window.VNMap||typeof window.VNMap.create!=='function'){
+  error.textContent='Không tải được Vietflexmap 1.0.2. Vui lòng kiểm tra kết nối hoặc CDN.';error.hidden=false;return;
+ }
+ try{
+  if(!vietflexApp){vietflexApp=window.VNMap.create('vietflexMap');window.vnMapApp=vietflexApp;}
+  if(typeof vietflexApp.addGeoJSON==='function'&&!target.dataset.loaded&&data){
+   const features=[];
+   for(const n of visibleNodes)if(C.validPoint(n))features.push({type:'Feature',geometry:{type:'Point',coordinates:[n.lon,n.lat]},properties:{name:n.name||n.id,source:n.source||'',kind:n.type||''}});
+   for(const e of visibleEdges){const from=byId.get(e.from),to=byId.get(e.to);if(C.validPoint(from)&&C.validPoint(to))features.push({type:'Feature',geometry:C.routeGeometry(from,to),properties:{kind:e.kind||'relationship',source:e.source||''}});}
+   vietflexApp.addGeoJSON({type:'FeatureCollection',features});target.dataset.loaded='1';
+  }
+  if(vietflexApp.map&&typeof vietflexApp.map.invalidateSize==='function')setTimeout(()=>vietflexApp.map.invalidateSize(),60);
+  $('basemapStatus').textContent='Vietflexmap 1.0.2 · dữ liệu hồ sơ là quan hệ đại diện, không phải luồng tiền';
+ }catch(err){error.textContent='Không thể khởi tạo Vietflexmap: '+err.message;error.hidden=false;console.error(err);}
+}
 function switchView(next){
- view=next;const graph=next==='graph';$('map').hidden=graph;$('graph').hidden=!graph;
- if(next!=='graph')document.body.classList.toggle('harmony',next==='harmony');
- if(basemapManager&&next!=='graph'){const name=next==='map'?'osm':'world';$('basemapSelect').value=name;basemapManager.set(name);}
- $('harmonyView').classList.toggle('active',next==='harmony');$('mapView').classList.toggle('active',next==='map');$('graphView').classList.toggle('active',graph);
- if(!graph&&map){map.invalidateSize();drawMap();}if(graph)drawGraph();
+ view=next;const graph=next==='graph',vf=next==='vietflex';
+ $('map').hidden=graph||vf;$('vietflexMap').hidden=!vf;$('graph').hidden=!graph;
+ if(!graph)document.body.classList.toggle('harmony',next==='harmony');
+ if(basemapManager&&!graph&&!vf){const name=next==='map'?'osm':'world';$('basemapSelect').value=name;basemapManager.set(name);}
+ $('harmonyView').classList.toggle('active',next==='harmony');$('mapView').classList.toggle('active',next==='map');$('graphView').classList.toggle('active',graph);$('vietflexView').classList.toggle('active',vf);
+ if(vf)openVietflex();else if(!graph&&map){map.invalidateSize();drawMap();}
+ if(graph)drawGraph();
 }
 function clearRoute(){stopPlayback();path=null;selected=null;selectedEdge=null;activeStep=0;$('routeStatus').textContent='Đã xóa tuyến. Chọn hai hồ sơ để truy tuyến mới.';render();}
 function exportGeoJSON(){
@@ -202,7 +222,8 @@ document.addEventListener('click',e=>{
  else if(n)showNode(n.dataset.node);else if(edge)showEdge(edge.dataset.edge);
 });
 for(const id of ['search','type','source','edgeKind'])$(id).addEventListener(id==='search'?'input':'change',()=>{stopPlayback();selected=null;path=null;selectedEdge=null;$('icijSearch').href='https://offshoreleaks.icij.org/search?q='+encodeURIComponent($('search').value);render();});
-$('reset').onclick=()=>loadData(window.ICIJ_DATA);$('harmonyView').onclick=()=>switchView('harmony');$('mapView').onclick=()=>switchView('map');$('graphView').onclick=()=>switchView('graph');$('fit').onclick=fit;
+$('reset').onclick=()=>loadData(window.ICIJ_DATA);$('harmonyView').onclick=()=>switchView('harmony');$('vietflexView').onclick=()=>switchView('vietflex');
+$('mapView').onclick=()=>switchView('map');$('graphView').onclick=()=>switchView('graph');$('fit').onclick=fit;
 $('trace').onclick=()=>{const a=$('start').value,b=$('end').value;if(!a||!b){toast('Hãy chọn cả điểm đầu và điểm cuối.');return;}activatePath(C.shortestPath(data.nodes,data.edges,a,b,$('transactionOnly').checked));};
 $('exampleTrace').onclick=()=>{$('transactionOnly').checked=false;activatePath(C.examplePath(data.nodes,data.edges));$('chainPanel').scrollIntoView({block:'nearest'});};
 $('previousStep').onclick=()=>{stopPlayback();inspectStep(activeStep-1);};$('nextStep').onclick=()=>{stopPlayback();inspectStep(activeStep+1);};
